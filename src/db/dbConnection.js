@@ -1,4 +1,3 @@
-const logger = require('../../utils/logger');
 const { Pool } = require('pg');
 
 // Dados para conexão ao banco de dados
@@ -17,9 +16,9 @@ const checkDatabaseConnection = async () => {
     try {
         await pool.connect(); // Tenta conectar
         isConnected = true; // Marca como conectado
-        logger.info('Conexão com o banco de dados estabelecida com sucesso.');
+        console.info('Conexão com o banco de dados estabelecida com sucesso.');
     } catch (err) {
-        logger.error('Erro ao conectar ao banco de dados:', err);
+        console.error('Erro ao conectar ao banco de dados:', err);
         process.exit(1); // Encerra se não conseguir conectar
     }
 };

@@ -1,8 +1,0 @@
-{"level":"error","message":"Erro ao processar a inscrição: error: não existe a relação \"inscricao_7_12\"","timestamp":"2024-10-20T18:50:11-03:00"}
-{"level":"error","message":"Erro ao processar a inscrição: error: não existe a relação \"inscricao_7_12\"","timestamp":"2024-10-20T18:52:19-03:00"}
-{"level":"error","message":"Erro ao registrar pagamento: error: não existe a relação \"inscricao\"","timestamp":"2024-10-21T01:02:27-03:00"}
-{"level":"error","message":"Erro ao registrar pagamento: error: não existe a relação \"inscricao\"","timestamp":"2024-10-21T01:02:48-03:00"}
-{"level":"error","message":"Erro ao registrar pagamento: error: não existe a relação \"inscricao\"","timestamp":"2024-10-21T01:10:49-03:00"}
-{"level":"error","message":"Erro ao registrar pagamento: error: não existe a relação \"localidade\"","timestamp":"2024-10-21T01:47:51-03:00"}
-{"level":"error","message":"Erro ao registrar pagamento: error: não existe a coluna \"comprovante_pagamento\" da relação \"pagamento\"","timestamp":"2024-10-21T03:47:51-03:00"}
-{"level":"error","message":"Erro ao registrar pagamento: error: não existe a coluna \"comprovante_pagamento\" da relação \"pagamento\"","timestamp":"2024-10-21T03:51:24-03:00"}

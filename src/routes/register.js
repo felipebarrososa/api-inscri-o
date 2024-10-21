@@ -1,13 +1,12 @@
 const express = require("express");
 const { body, validationResult } = require("express-validator");
-const logger = require("../../utils/logger");
 const { pool } = require("../db/dbConnection");
 
 const register = [
 	async (req, res) => {
 		const errors = validationResult(req);
 		if (!errors.isEmpty()) {
-			logger.error("Validation errors:", errors.array());
+			console.error("Validation errors:", errors.array());
 			return res.status(400).json({ errors: errors.array() });
 		}
 
@@ -22,7 +21,7 @@ const register = [
 			const city = cityExist.rows[0];
 
 			if (!city) {
-				logger.warn(`Localidade não encontrada: ${localidade}`);
+				console.warn(`Localidade não encontrada: ${localidade}`);
 				return res.status(401).json({ message: `Localidade inválida` });
 			}
 
@@ -32,7 +31,7 @@ const register = [
 				[city.id, nomeResponsavel, totalInscritos]
 			);
 			const enrollmentId = enrollment.rows[0].id;
-			logger.info(
+			console.info(
 				`Inscrição geral criada com ID: ${enrollmentId} para a localidade: ${localidade}`
 			);
 
@@ -63,7 +62,7 @@ const register = [
 			const tipoInscricao10acima = isAfterDeadline ? 4 : 1;
 
 			if (isAfterDeadline) {
-				logger.warn(`Tentativa de inscrição da localidade ${localidade} após a data limite: ${currentDate}`);
+				console.warn(`Tentativa de inscrição da localidade ${localidade} após a data limite: ${currentDate}`);
 			}
 
 			// Obtém todos os tipos de inscrição necessários em uma única consulta
@@ -84,11 +83,11 @@ const register = [
 					[enrollmentId, 5, age06masculine, age06feminine]
 				);
 				if (enrollmentAge06.rowCount === 0) {
-					logger.error(`Falha ao inserir dados na tabela inscricao_0_6 para ID de inscrição: ${enrollmentId}`);
+					console.error(`Falha ao inserir dados na tabela inscricao_0_6 para ID de inscrição: ${enrollmentId}`);
 					return res.status(500).json({ error: "Falha ao processar a inscrição para a faixa etária 0-6." });
 				}
 				const registrationId06 = enrollmentAge06.rows[0].id;
-				logger.info(`Sucesso ao inserir na tabela inscricao_0_6: tipo_inscricao_id = 5 para ID de inscrição: ${enrollmentId}, registro ID: ${registrationId06}`);
+				console.info(`Sucesso ao inserir na tabela inscricao_0_6: tipo_inscricao_id = 5 para ID de inscrição: ${enrollmentId}, registro ID: ${registrationId06}`);
 			}
 
 			// Inserção para a faixa etária 7-10
@@ -99,11 +98,11 @@ const register = [
 				);
 
 				if (enrollmentAge710.rowCount === 0) {
-					logger.error(`Falha ao inserir dados na tabela inscricao_7_10 para ID de inscrição: ${enrollmentId}`);
+					console.error(`Falha ao inserir dados na tabela inscricao_7_10 para ID de inscrição: ${enrollmentId}`);
 					return res.status(500).json({ error: "Falha ao processar a inscrição para a faixa etária 7-10." });
 				}
 
-                logger.info(`sucesso ao inserir os dados na tabela inscricao_7_10 para a localidade${localidade},`)
+                console.info(`sucesso ao inserir os dados na tabela inscricao_7_10 para a localidade${localidade},`)
 
 				const tipoInscricaoId = enrollmentAge710.rows[0].tipo_inscricao_id;
 				const valorTipoInscricao = tiposInscricaoMap[tipoInscricaoId];
@@ -111,9 +110,9 @@ const register = [
 				// Calcula o total para a faixa etária 7-10
 				const totalAge710 = age710Total * valorTipoInscricao;
                 totalGeral += totalAge710
-				logger.info(`Total para faixa etária 7-10: ${totalAge710} (quantidade: ${age710Total}, valor: ${valorTipoInscricao})`);
+				console.info(`Total para faixa etária 7-10: ${totalAge710} (quantidade: ${age710Total}, valor: ${valorTipoInscricao})`);
 
-				logger.info(`Sucesso ao inserir na tabela inscricao_7_10: tipo_inscricao_id = ${tipoInscricaoId}, valor = ${valorTipoInscricao} para ID de inscrição: ${enrollmentId}`);
+				console.info(`Sucesso ao inserir na tabela inscricao_7_10: tipo_inscricao_id = ${tipoInscricaoId}, valor = ${valorTipoInscricao} para ID de inscrição: ${enrollmentId}`);
 			}
 
 			// Inserção para a faixa etária 10+
@@ -124,7 +123,7 @@ const register = [
 				);
 
 				if (enrollmentAge10.rowCount === 0) {
-					logger.error(`Falha ao inserir dados na tabela inscricao_10_acima para ID de inscrição: ${enrollmentId}`);
+					console.error(`Falha ao inserir dados na tabela inscricao_10_acima para ID de inscrição: ${enrollmentId}`);
 					return res.status(500).json({ error: "Falha ao processar a inscrição para a faixa etária 10+." });
 				}
 
@@ -134,9 +133,9 @@ const register = [
 				// Calcula o total para a faixa etária 10+
 				const totalAge10 = age10Total * valorTipoInscricao;
                 totalGeral += totalAge10
-				logger.info(`Total para faixa etária 10+: ${totalAge10} (quantidade: ${age10Total}, valor: ${valorTipoInscricao})`);
+				console.info(`Total para faixa etária 10+: ${totalAge10} (quantidade: ${age10Total}, valor: ${valorTipoInscricao})`);
 
-				logger.info(`Sucesso ao inserir na tabela inscricao_10_acima: tipo_inscricao_id = ${tipoInscricaoId}, valor = ${valorTipoInscricao} para ID de inscrição: ${enrollmentId}`);
+				console.info(`Sucesso ao inserir na tabela inscricao_10_acima: tipo_inscricao_id = ${tipoInscricaoId}, valor = ${valorTipoInscricao} para ID de inscrição: ${enrollmentId}`);
 			}
 
 			// Inserção para o serviço
@@ -147,7 +146,7 @@ const register = [
 				);
 
 				if (enrollmentService.rowCount === 0) {
-					logger.error(`Falha ao inserir dados na tabela inscricao_servico para ID de inscrição: ${enrollmentId}`);
+					console.error(`Falha ao inserir dados na tabela inscricao_servico para ID de inscrição: ${enrollmentId}`);
 					return res.status(500).json({ error: "Falha ao processar a inscrição para o serviço." });
 				}
 
@@ -157,14 +156,14 @@ const register = [
 				// Calcula o total para o serviço
 				const totalService = serviceTotal * valorTipoInscricao;
                 totalGeral += totalService
-				logger.info(`Total para serviços: ${totalService} (quantidade: ${serviceTotal}, valor: ${valorTipoInscricao})`);
+				console.info(`Total para serviços: ${totalService} (quantidade: ${serviceTotal}, valor: ${valorTipoInscricao})`);
 
-				logger.info(`Sucesso ao inserir na tabela inscricao_servico: tipo_inscricao_id = ${tipoInscricaoId}, valor = ${valorTipoInscricao} para ID de inscrição: ${enrollmentId}`);
+				console.info(`Sucesso ao inserir na tabela inscricao_servico: tipo_inscricao_id = ${tipoInscricaoId}, valor = ${valorTipoInscricao} para ID de inscrição: ${enrollmentId}`);
 			}
 
             const saldoDevedor = pool.query('UPDATE localidades SET saldo_devedor = $1 WHERE nome = $2', [totalGeral, localidade])
             if (saldoDevedor.rowCount === 0) {
-                logger.error(`Falha ao tentar atualizar o saldo devedor da localidade: ${localidade}`);
+                console.error(`Falha ao tentar atualizar o saldo devedor da localidade: ${localidade}`);
                 return res.status(500).json({ error: `Falha ao tentar atualizar o saldo devedor da localidade: ${localidade}` });
             }
 
@@ -175,7 +174,7 @@ const register = [
 				enrollmentId,
 			});
 		} catch (err) {
-			logger.error(`Erro ao processar a inscrição: ${err.message}`);
+			console.error(`Erro ao processar a inscrição: ${err.message}`);
 			return res.status(500).json({ error: "Erro ao processar a inscrição." });
 		}
 	},

@@ -1,4 +1,2 @@
 .env
 .ecosystem.config.js
-.logs
-.utils

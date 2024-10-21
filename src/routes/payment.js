@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const logger = require('../../utils/logger');
 const { pool } = require('../db/dbConnection');
 const multer = require('multer');
 const path = require('path');
@@ -25,7 +24,7 @@ router.post('/', upload.single('comprovante_pagamento'), async (req, res) => {
 
     // Verifica se o comprovante foi carregado
     if (!comprovante_pagamento) {
-        logger.warn('Comprovante de pagamento não fornecido.');
+        console.warn('Comprovante de pagamento não fornecido.');
         return res.status(400).json({ message: 'Comprovante de pagamento é obrigatório.' });
     }
 
@@ -37,7 +36,7 @@ router.post('/', upload.single('comprovante_pagamento'), async (req, res) => {
         );
 
         if (cityExists.rows.length === 0) {
-            logger.warn(`Localidade "${cidade}" não encontrada.`);
+            console.warn(`Localidade "${cidade}" não encontrada.`);
             return res.status(404).json({ message: 'Localidade não encontrada.' });
         } else {
             console.log(`Localidade encontrada: ${cityExists.rows[0]}`);
@@ -50,7 +49,7 @@ router.post('/', upload.single('comprovante_pagamento'), async (req, res) => {
         );
 
         if (enrollmentExists.rows.length === 0) {
-            logger.warn(`Inscrição não encontrada com cidade: ${cidade}`);
+            console.warn(`Inscrição não encontrada com cidade: ${cidade}`);
             return res.status(404).json({ message: 'Inscrição não encontrada.' });
         }
 
@@ -65,7 +64,7 @@ router.post('/', upload.single('comprovante_pagamento'), async (req, res) => {
         );
 
         const paymentId = result.rows[0].id;
-        logger.info(`Pagamento registrado com sucesso, ID: ${paymentId}`);
+        console.info(`Pagamento registrado com sucesso, ID: ${paymentId}`);
 
         // Registra a movimentação financeira
         await pool.query(
@@ -79,12 +78,12 @@ router.post('/', upload.single('comprovante_pagamento'), async (req, res) => {
             [valor_pago, localidade_id]
         );
 
-        logger.info(`Saldo da localidade atualizado após o pagamento, nova entrada: ${valor_pago}`);
+        console.info(`Saldo da localidade atualizado após o pagamento, nova entrada: ${valor_pago}`);
 
         return res.status(201).json({ message: 'Pagamento registrado com sucesso!', paymentId });
         
     } catch (err) {
-        logger.error(`Erro ao registrar pagamento: ${err}`);
+        console.error(`Erro ao registrar pagamento: ${err}`);
         return res.status(500).json({ error: 'Erro ao registrar pagamento.' });
     }
 });
