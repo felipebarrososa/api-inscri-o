@@ -1,106 +1,184 @@
-const express = require('express');
-const router = express.Router();
-const logger = require('../../utils/logger');
-const { pool } = require('../db/dbConnection');
+const express = require("express");
+const { body, validationResult } = require("express-validator");
+const logger = require("../../utils/logger");
+const { pool } = require("../db/dbConnection");
 
 const register = [
-    async (req, res) => {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            logger.error('Validation errors:', errors.array());
-            return res.status(400).json({ errors: errors.array() });
-        }
+	async (req, res) => {
+		const errors = validationResult(req);
+		if (!errors.isEmpty()) {
+			logger.error("Validation errors:", errors.array());
+			return res.status(400).json({ errors: errors.array() });
+		}
 
-        const { localidade, nomeResponsavel, totalInscritos, inscritos, servico } = req.body;
+		const { localidade, nomeResponsavel, totalInscritos, inscritos, servico } = req.body;
 
-        try {
-            const cityExist = await pool.query(`SELECT * FROM localidades WHERE nome = $1`, [localidade]);
-            const city = cityExist.rows[0];
+		try {
+			// Verifica se a localidade existe
+			const cityExist = await pool.query(
+				`SELECT * FROM localidades WHERE nome = $1`,
+				[localidade]
+			);
+			const city = cityExist.rows[0];
 
-            if (!city) {
-                logger.warn(`Localidade não encontrada: ${localidade}`);
-                return res.status(401).json({ message: `Localidade inválida` });
+			if (!city) {
+				logger.warn(`Localidade não encontrada: ${localidade}`);
+				return res.status(401).json({ message: `Localidade inválida` });
+			}
+
+			// Cria a inscrição geral
+			const enrollment = await pool.query(
+				"INSERT INTO inscricao_geral (localidade_id, nome_responsavel, qtd_geral) VALUES ($1, $2, $3) RETURNING id",
+				[city.id, nomeResponsavel, totalInscritos]
+			);
+			const enrollmentId = enrollment.rows[0].id;
+			logger.info(
+				`Inscrição geral criada com ID: ${enrollmentId} para a localidade: ${localidade}`
+			);
+
+			// Dados dos inscritos por faixa etária
+            const {
+                "0-6": { masculino: age06masculine, feminino: age06feminine },
+                "7-10": { masculino: age710masculine, feminino: age710feminine },
+                "10+": { masculino: age10masculine, feminino: age10feminine },
+            } = inscritos;
+            
+            const { masculino: servicemasculine, feminino: servicefeminine } = servico;
+            
+            // Calcula os totais por faixa etária
+            const age06Total = Number(age06feminine) + Number(age06masculine);
+            const age710Total = Number(age710feminine) + Number(age710masculine);
+            const age10Total = Number(age10feminine) + Number(age10masculine);
+            const serviceTotal = Number(servicemasculine) + Number(servicefeminine);
+            
+
+			// Verifica a data limite do evento
+			const deadline = await pool.query(`SELECT * FROM eventos WHERE id = 1`);
+			const currentDate = new Date();
+			const isAfterDeadline =
+				currentDate > new Date(deadline.rows[0].data_limite);
+
+			// Define o tipo de inscrição para 7-10 e 10+
+			const tipoInscricao7a10 = isAfterDeadline ? 4 : 2;
+			const tipoInscricao10acima = isAfterDeadline ? 4 : 1;
+
+			if (isAfterDeadline) {
+				logger.warn(`Tentativa de inscrição da localidade ${localidade} após a data limite: ${currentDate}`);
+			}
+
+			// Obtém todos os tipos de inscrição necessários em uma única consulta
+			const tipoInscricaoIds = [3, 5, tipoInscricao7a10, tipoInscricao10acima]; // IDs que você precisa buscar
+			const tiposInscricaoResult = await pool.query("SELECT id, valor FROM tipo_inscricao WHERE id = ANY($1::int[])", [tipoInscricaoIds]);
+
+			// Cria um objeto para armazenar os valores
+			const tiposInscricaoMap = {};
+			tiposInscricaoResult.rows.forEach((tipo) => {
+				tiposInscricaoMap[tipo.id] = tipo.valor;
+			});
+             
+            let totalGeral = 0
+			// Inserção para a faixa etária 0-6
+			if (age06Total > 0) {
+				const enrollmentAge06 = await pool.query(
+					"INSERT INTO inscricao_0_6(inscricao_geral_id, tipo_inscricao_id, qtd_masculino, qtd_feminino) VALUES ($1, $2, $3, $4) RETURNING id",
+					[enrollmentId, 5, age06masculine, age06feminine]
+				);
+				if (enrollmentAge06.rowCount === 0) {
+					logger.error(`Falha ao inserir dados na tabela inscricao_0_6 para ID de inscrição: ${enrollmentId}`);
+					return res.status(500).json({ error: "Falha ao processar a inscrição para a faixa etária 0-6." });
+				}
+				const registrationId06 = enrollmentAge06.rows[0].id;
+				logger.info(`Sucesso ao inserir na tabela inscricao_0_6: tipo_inscricao_id = 5 para ID de inscrição: ${enrollmentId}, registro ID: ${registrationId06}`);
+			}
+
+			// Inserção para a faixa etária 7-10
+			if (age710Total > 0) {
+				const enrollmentAge710 = await pool.query(
+					"INSERT INTO inscricao_7_10(inscricao_geral_id, tipo_inscricao_id, qtd_masculino, qtd_feminino) VALUES ($1, $2, $3, $4) RETURNING tipo_inscricao_id",
+					[enrollmentId, tipoInscricao7a10, age710masculine, age710feminine]
+				);
+
+				if (enrollmentAge710.rowCount === 0) {
+					logger.error(`Falha ao inserir dados na tabela inscricao_7_10 para ID de inscrição: ${enrollmentId}`);
+					return res.status(500).json({ error: "Falha ao processar a inscrição para a faixa etária 7-10." });
+				}
+
+                logger.info(`sucesso ao inserir os dados na tabela inscricao_7_10 para a localidade${localidade},`)
+
+				const tipoInscricaoId = enrollmentAge710.rows[0].tipo_inscricao_id;
+				const valorTipoInscricao = tiposInscricaoMap[tipoInscricaoId];
+
+				// Calcula o total para a faixa etária 7-10
+				const totalAge710 = age710Total * valorTipoInscricao;
+                totalGeral += totalAge710
+				logger.info(`Total para faixa etária 7-10: ${totalAge710} (quantidade: ${age710Total}, valor: ${valorTipoInscricao})`);
+
+				logger.info(`Sucesso ao inserir na tabela inscricao_7_10: tipo_inscricao_id = ${tipoInscricaoId}, valor = ${valorTipoInscricao} para ID de inscrição: ${enrollmentId}`);
+			}
+
+			// Inserção para a faixa etária 10+
+			if (age10Total > 0) {
+				const enrollmentAge10 = await pool.query(
+					"INSERT INTO inscricao_10_acima(inscricao_geral_id, tipo_inscricao_id, qtd_masculino, qtd_feminino) VALUES ($1, $2, $3, $4) RETURNING tipo_inscricao_id",
+					[enrollmentId, tipoInscricao10acima, age10masculine, age10feminine]
+				);
+
+				if (enrollmentAge10.rowCount === 0) {
+					logger.error(`Falha ao inserir dados na tabela inscricao_10_acima para ID de inscrição: ${enrollmentId}`);
+					return res.status(500).json({ error: "Falha ao processar a inscrição para a faixa etária 10+." });
+				}
+
+				const tipoInscricaoId = enrollmentAge10.rows[0].tipo_inscricao_id;
+				const valorTipoInscricao = tiposInscricaoMap[tipoInscricaoId];
+
+				// Calcula o total para a faixa etária 10+
+				const totalAge10 = age10Total * valorTipoInscricao;
+                totalGeral += totalAge10
+				logger.info(`Total para faixa etária 10+: ${totalAge10} (quantidade: ${age10Total}, valor: ${valorTipoInscricao})`);
+
+				logger.info(`Sucesso ao inserir na tabela inscricao_10_acima: tipo_inscricao_id = ${tipoInscricaoId}, valor = ${valorTipoInscricao} para ID de inscrição: ${enrollmentId}`);
+			}
+
+			// Inserção para o serviço
+			if (serviceTotal > 0) {
+				const enrollmentService = await pool.query(
+					"INSERT INTO inscricao_servico(inscricao_geral_id, tipo_inscricao_id, qtd_masculino, qtd_feminino) VALUES ($1, $2, $3, $4) RETURNING tipo_inscricao_id",
+					[enrollmentId, 3, servicemasculine, servicefeminine]
+				);
+
+				if (enrollmentService.rowCount === 0) {
+					logger.error(`Falha ao inserir dados na tabela inscricao_servico para ID de inscrição: ${enrollmentId}`);
+					return res.status(500).json({ error: "Falha ao processar a inscrição para o serviço." });
+				}
+
+				const tipoInscricaoId = enrollmentService.rows[0].tipo_inscricao_id;
+				const valorTipoInscricao = tiposInscricaoMap[tipoInscricaoId];
+
+				// Calcula o total para o serviço
+				const totalService = serviceTotal * valorTipoInscricao;
+                totalGeral += totalService
+				logger.info(`Total para serviços: ${totalService} (quantidade: ${serviceTotal}, valor: ${valorTipoInscricao})`);
+
+				logger.info(`Sucesso ao inserir na tabela inscricao_servico: tipo_inscricao_id = ${tipoInscricaoId}, valor = ${valorTipoInscricao} para ID de inscrição: ${enrollmentId}`);
+			}
+
+            const saldoDevedor = pool.query('UPDATE localidades SET saldo_devedor = $1 WHERE nome = $2', [totalGeral, localidade])
+            if (saldoDevedor.rowCount === 0) {
+                logger.error(`Falha ao tentar atualizar o saldo devedor da localidade: ${localidade}`);
+                return res.status(500).json({ error: `Falha ao tentar atualizar o saldo devedor da localidade: ${localidade}` });
             }
 
-            const enrollment = await pool.query(
-                'INSERT INTO inscricao_geral (localidade_id, nome_responsavel, qtd_geral) VALUES ($1, $2, $3) RETURNING id',
-                [city.id, nomeResponsavel, totalInscritos]
-            );
-            const enrollmentId = enrollment.rows[0].id;
-            logger.info(`Inscrição geral criada com ID: ${enrollmentId} para a localidade: ${localidade}`);
-
-            const age06masculine = inscritos['0-6'].masculino;
-            const age06feminine = inscritos['0-6'].feminino;
-            const age710masculine = inscritos['7-10'].masculino;
-            const age710feminine = inscritos['7-10'].feminino;
-            const age10masculine = inscritos['10+'].masculino;
-            const age10feminine = inscritos['10+'].feminino;
-            const servicemasculine = servico.masculino;
-            const servicefeminine = servico.feminino;
-
-            const deadline = await pool.query(`SELECT * FROM eventos WHERE id = 1`);
-            const currentDate = new Date();
-
-            let tipoInscricao;
-            if (currentDate > deadline.rows[0].data_limite) {
-                logger.warn(`Tentativa de inscrição da localidade ${localidade} após a data limite: ${currentDate}`);
-                tipoInscricao = 4;
-            } else {
-                tipoInscricao = 1;
-            }
-
-            // Inserção para a faixa etária 0-6
-            if (age06masculine > 0 || age06feminine > 0) {
-                const enrollmentAge06 = await pool.query(
-                    'INSERT INTO inscricao_0_6(inscricao_geral_id, tipo_inscricao_id, qtd_masculino, qtd_feminino) VALUES ($1, $2, $3, $4)',
-                    [enrollmentId, 5, age06masculine, age06feminine]
-                );
-                logger.info(`Inserção feita na tabela inscricao_0_6 com ID de inscrição: ${enrollmentId}`);
-            } else {
-                logger.info(`Nenhuma inscrição foi feita para a faixa etária 0-6 (todos os valores são zero).`);
-            }
-
-            // Inserção para a faixa etária 7-12
-            if (age710masculine > 0 || age710feminine > 0) {
-                const enrollmentAge712 = await pool.query(
-                    'INSERT INTO inscricao_7_12(inscricao_geral_id, tipo_inscricao_id, qtd_masculino, qtd_feminino) VALUES ($1, $2, $3, $4)',
-                    [enrollmentId, 2, age710masculine, age710feminine]
-                );
-                logger.info(`Inserção feita na tabela inscricao_7_12 com ID de inscrição: ${enrollmentId}`);
-            } else {
-                logger.info(`Nenhuma inscrição foi feita para a faixa etária 7-12 (todos os valores são zero).`);
-            }
-
-            // Inserção para a faixa etária 13+
-            if (age10masculine > 0 || age10feminine > 0) {
-                const enrollmentAge13 = await pool.query(
-                    'INSERT INTO inscricao_13_acima(inscricao_geral_id, tipo_inscricao_id, qtd_masculino, qtd_feminino) VALUES ($1, $2, $3, $4)',
-                    [enrollmentId, tipoInscricao, age10masculine, age10feminine]
-                );
-                logger.info(`Inserção feita na tabela inscricao_13_acima com ID de inscrição: ${enrollmentId}`);
-            } else {
-                logger.info(`Nenhuma inscrição foi feita para a faixa etária 13+ (todos os valores são zero).`);
-            }
-
-            // Inserção para o serviço
-            if (servicemasculine > 0 || servicefeminine > 0) {
-                const enrollmentService = await pool.query(
-                    'INSERT INTO inscricao_servico(inscricao_geral_id, tipo_inscricao_id, qtd_masculino, qtd_feminino) VALUES ($1, $2, $3, $4)',
-                    [enrollmentId, 3, servicemasculine, servicefeminine]
-                );
-                logger.info(`Inserção feita na tabela inscricao_servico com ID de inscrição: ${enrollmentId}`);
-            } else {
-                logger.info(`Nenhuma inscrição foi feita para o serviço (todos os valores são zero).`);
-            }
-
-            return res.status(201).json({ message: 'Inscrição realizada com sucesso!' });
-
-        } catch (err) {
-            logger.error(`Erro ao processar a inscrição: ${err}`);
-            return res.status(500).json({ error: 'Erro ao processar a inscrição.' });
-        }
-    }
+			// Se todas as inserções forem bem-sucedidas, envia uma resposta de sucesso
+			return res.status(201).json({
+				message: "Inscrição realizada com sucesso",
+                totalGeral,
+				enrollmentId,
+			});
+		} catch (err) {
+			logger.error(`Erro ao processar a inscrição: ${err.message}`);
+			return res.status(500).json({ error: "Erro ao processar a inscrição." });
+		}
+	},
 ];
-
 
 module.exports = register;
