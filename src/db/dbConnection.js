@@ -6,6 +6,7 @@ const pool = new Pool({
     password: process.env.POSTGRES_PASSWORD,
     host: process.env.POSTGRES_HOST,
     database: process.env.POSTGRES_DATABASE,
+    ssl:process.env.POSTGRES_URL_NO_SSL,
 });
 
 let isConnected = false; // Variável de controle
