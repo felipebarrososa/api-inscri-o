@@ -2,25 +2,15 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db/dbConnection');
 const multer = require('multer');
-const path = require('path');
 
-// Configuração do multer para upload de arquivos
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/'); // Pasta onde os comprovantes serão armazenados
-    },
-    filename: (req, file, cb) => {
-        const uniqueName = Date.now() + path.extname(file.originalname); // Gera um nome único para o arquivo
-        cb(null, uniqueName);
-    }
-});
-
+// Configuração do multer para processar o upload de arquivos como buffer
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 // Rota para registrar o pagamento
 router.post('/', upload.single('comprovante_pagamento'), async (req, res) => {
     const { valor_pago, cidade } = req.body;
-    const comprovante_pagamento = req.file ? req.file.filename : null;
+    const comprovante_pagamento = req.file ? req.file.buffer.toString('base64') : null;
 
     // Verifica se o comprovante foi carregado
     if (!comprovante_pagamento) {
