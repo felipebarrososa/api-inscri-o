@@ -174,13 +174,13 @@ const register = [
 					return res.status(500).json({ error: "Falha ao processar a inscrição para o serviço." });
 				}
 
-				const tipoInscricaoId = enrollmenParticipacao.rows[0].tipo_inscricao_id;
+				const tipoInscricaoId = 6;
 				const valorTipoInscricao = tiposInscricaoMap[tipoInscricaoId];
 
 				// Calcula o total para o participacao
 				const totalParticipacao = participacaoTotal * valorTipoInscricao;
                 totalGeral += totalParticipacao
-				console.info(`Total para serviços: ${totalParticipacao} (quantidade: ${participacaoTotal}, valor: ${valorTipoInscricao})`);
+				console.info(`Total para particpação: ${totalParticipacao} (quantidade: ${participacaoTotal}, valor: ${valorTipoInscricao})`);
 
 				console.info(`Sucesso ao inserir na tabela inscricao_servico: tipo_inscricao_id = ${tipoInscricaoId}, valor = ${valorTipoInscricao} para ID de inscrição: ${enrollmentId}`);
 			}
