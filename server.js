@@ -8,6 +8,7 @@ const { checkDatabaseConnection } = require('./src/db/dbConnection.js');
 const locationsRoutes = require('./src/routes/locations.js');
 const register = require('./src/routes/register.js');
 const paymentRoutes = require('./src/routes/payment.js');
+const hospedagemRoutes = require('./src/routes/hospedagem.js');
 
 app.use(express.json());
 
@@ -33,6 +34,7 @@ app.get('/', (req, res) => {
 app.use('/localidades', locationsRoutes);
 app.use('/registro', register);
 app.use('/pagamento', paymentRoutes);
+app.use('/hospedagem', hospedagemRoutes);
 
 const port = process.env.PORT
 console.log(port)
