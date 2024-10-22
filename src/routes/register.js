@@ -76,7 +76,9 @@ const register = [
 			tiposInscricaoResult.rows.forEach((tipo) => {
 				tiposInscricaoMap[tipo.id] = tipo.valor;
 			});
-             
+            
+            console.log('Tipos de Inscrição:', tiposInscricaoMap);
+
             let totalGeral = 0
 			// Inserção para a faixa etária 0-6
 			if (age06Total > 0) {
