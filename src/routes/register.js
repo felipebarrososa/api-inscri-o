@@ -188,7 +188,7 @@ const register = [
 				console.info(`Sucesso ao inserir na tabela inscricao_servico: tipo_inscricao_id = ${tipoInscricaoId}, valor = ${valorTipoInscricao} para ID de inscrição: ${enrollmentId}`);
 			}
 
-            const saldoDevedor = pool.query('UPDATE localidades SET saldo_devedor = $1 WHERE nome = $2', [totalGeral, localidade])
+            const saldoDevedor = pool.query('UPDATE localidades SET saldo_devedor = saldo_devedor + $1 WHERE nome = $2', [totalGeral, localidade])
             if (saldoDevedor.rowCount === 0) {
                 console.error(`Falha ao tentar atualizar o saldo devedor da localidade: ${localidade}`);
                 return res.status(500).json({ error: `Falha ao tentar atualizar o saldo devedor da localidade: ${localidade}` });
