@@ -10,7 +10,7 @@ const register = [
 			return res.status(400).json({ errors: errors.array() });
 		}
 
-		const { localidade, nomeResponsavel, totalInscritos, inscritos, servico } = req.body;
+		const { localidade, nomeResponsavel, totalInscritos, inscritos, servico, participacao } = req.body;
 
 		try {
 			// Verifica se a localidade existe
@@ -43,12 +43,14 @@ const register = [
             } = inscritos;
             
             const { masculino: servicemasculine, feminino: servicefeminine } = servico;
+            const { masculino: participacaoMasculine, feminino: participacaoFeminine } = participacao;
             
             // Calcula os totais por faixa etária
             const age06Total = Number(age06feminine) + Number(age06masculine);
             const age710Total = Number(age710feminine) + Number(age710masculine);
             const age10Total = Number(age10feminine) + Number(age10masculine);
             const serviceTotal = Number(servicemasculine) + Number(servicefeminine);
+            const participacaoTotal = Number(participacaoMasculine) + Number(participacaoFeminine);
             
 
 			// Verifica a data limite do evento
@@ -157,6 +159,28 @@ const register = [
 				const totalService = serviceTotal * valorTipoInscricao;
                 totalGeral += totalService
 				console.info(`Total para serviços: ${totalService} (quantidade: ${serviceTotal}, valor: ${valorTipoInscricao})`);
+
+				console.info(`Sucesso ao inserir na tabela inscricao_servico: tipo_inscricao_id = ${tipoInscricaoId}, valor = ${valorTipoInscricao} para ID de inscrição: ${enrollmentId}`);
+			}
+			// Inserção para o participacao
+			if (participacaoTotal > 0) {
+				const enrollmenParticipacao = await pool.query(
+					"INSERT INTO inscricao_tx_participacao(inscricao_geral_id, tipo_inscricao_id, qtd_masculino, qtd_feminino) VALUES ($1, $2, $3, $4) RETURNING tipo_inscricao_id",
+					[enrollmentId, 6, participacaoMasculine, participacaoFeminine]
+				);
+
+				if (enrollmenParticipacao.rowCount === 0) {
+					console.error(`Falha ao inserir dados na tabela inscricao_servico para ID de inscrição: ${enrollmentId}`);
+					return res.status(500).json({ error: "Falha ao processar a inscrição para o serviço." });
+				}
+
+				const tipoInscricaoId = enrollmenParticipacao.rows[0].tipo_inscricao_id;
+				const valorTipoInscricao = tiposInscricaoMap[tipoInscricaoId];
+
+				// Calcula o total para o participacao
+				const totalParticipacao = participacaoTotal * valorTipoInscricao;
+                totalGeral += totalParticipacao
+				console.info(`Total para serviços: ${totalParticipacao} (quantidade: ${participacaoTotal}, valor: ${valorTipoInscricao})`);
 
 				console.info(`Sucesso ao inserir na tabela inscricao_servico: tipo_inscricao_id = ${tipoInscricaoId}, valor = ${valorTipoInscricao} para ID de inscrição: ${enrollmentId}`);
 			}
