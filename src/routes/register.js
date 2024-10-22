@@ -174,8 +174,7 @@ const register = [
 					return res.status(500).json({ error: "Falha ao processar a inscrição para o serviço." });
 				}
 
-				const tipoInscricaoId = 6;
-				const valorTipoInscricao = tiposInscricaoMap[tipoInscricaoId];
+				const valorTipoInscricao = tiposInscricaoMap[6];
 
 				// Calcula o total para o participacao
 				const totalParticipacao = participacaoTotal * valorTipoInscricao;
