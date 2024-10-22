@@ -68,7 +68,7 @@ const register = [
 			}
 
 			// Obtém todos os tipos de inscrição necessários em uma única consulta
-			const tipoInscricaoIds = [3, 5, tipoInscricao7a10, tipoInscricao10acima]; // IDs que você precisa buscar
+			const tipoInscricaoIds = [3, 5, tipoInscricao7a10, tipoInscricao10acima, 6]; // IDs que você precisa buscar
 			const tiposInscricaoResult = await pool.query("SELECT id, valor FROM tipo_inscricao WHERE id = ANY($1::int[])", [tipoInscricaoIds]);
 
 			// Cria um objeto para armazenar os valores
