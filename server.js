@@ -9,6 +9,7 @@ const locationsRoutes = require('./src/routes/locations.js');
 const register = require('./src/routes/register.js');
 const paymentRoutes = require('./src/routes/payment.js');
 const hospedagemRoutes = require('./src/routes/hospedagem.js');
+const dashboardRoutes = require('./src/routes/dashboard.js');
 
 app.use(express.json());
 
@@ -35,6 +36,7 @@ app.use('/localidades', locationsRoutes);
 app.use('/registro', register);
 app.use('/pagamento', paymentRoutes);
 app.use('/hospedagem', hospedagemRoutes);
+app.use('/dashboard', dashboardRoutes);
 
 const port = process.env.PORT
 console.log(port)
