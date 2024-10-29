@@ -48,7 +48,7 @@ router.post('/', upload.single('comprovante_pagamento'), async (req, res) => {
 
         // Insere o pagamento
         const result = await pool.query(
-            'INSERT INTO Pagamento (valor_pago, comprovante_imagem, inscricao_id) VALUES ($1, $2, $3) RETURNING id',
+            'INSERT INTO Pagamento (valor_pago, comprovante_imagem, localidade_id) VALUES ($1, $2, $3) RETURNING id',
             [valor_pago, comprovante_pagamento, localidade_id]
         );
 
@@ -58,7 +58,7 @@ router.post('/', upload.single('comprovante_pagamento'), async (req, res) => {
         // Registra a movimentação financeira
         await pool.query(
             'INSERT INTO Movimentacao_Financeira (tipo, descricao, valor) VALUES ($1, $2, $3)',
-            ['Entrada', `Pagamento referente à inscrição ID: ${localidade_id}`, valor_pago]
+            ['Entrada', `Pagamento referente à localidade com ID: ${localidade_id}`, valor_pago]
         );
 
         // Atualiza o saldo da localidade, subtraindo o valor pago
