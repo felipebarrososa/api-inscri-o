@@ -44,13 +44,12 @@ router.post('/', upload.single('comprovante_pagamento'), async (req, res) => {
         }
 
         // Obtém o ID da localidade associada à inscrição
-        const localidade_id = enrollmentExists.rows[0].localidade_id; 
-        const inscricao_id = enrollmentExists.rows[0].id; 
+        const localidade_id = enrollmentExists.rows[0].localidade_id;
 
         // Insere o pagamento
         const result = await pool.query(
             'INSERT INTO Pagamento (valor_pago, comprovante_imagem, inscricao_id) VALUES ($1, $2, $3) RETURNING id',
-            [valor_pago, comprovante_pagamento, inscricao_id]
+            [valor_pago, comprovante_pagamento, localidade_id]
         );
 
         const paymentId = result.rows[0].id;
@@ -59,7 +58,7 @@ router.post('/', upload.single('comprovante_pagamento'), async (req, res) => {
         // Registra a movimentação financeira
         await pool.query(
             'INSERT INTO Movimentacao_Financeira (tipo, descricao, valor) VALUES ($1, $2, $3)',
-            ['Entrada', `Pagamento referente à inscrição ID: ${inscricao_id}`, valor_pago]
+            ['Entrada', `Pagamento referente à inscrição ID: ${localidade_id}`, valor_pago]
         );
 
         // Atualiza o saldo da localidade, subtraindo o valor pago
