@@ -3,7 +3,7 @@ const router = express.Router();
 const { pool } = require('../db/dbConnection');
 
 // Rota para obter dados do dashboard
-router.get('/dashboard', async (req, res) => {
+router.get('/', async (req, res) => {
     try {
         // Consulta dados das diferentes tabelas
         const eventos = await pool.query('SELECT id, descricao, data_limite FROM public.eventos');
