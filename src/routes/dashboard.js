@@ -14,18 +14,18 @@ router.get('/', async (req, res) => {
             JOIN public.inscricao_geral ig ON h.id_inscricao = ig.id
             JOIN public.localidades l ON ig.localidade_id = l.id
         `);
-        const inscricoes0_6 = await pool.query(`SELECT lc.nome, sum(insc.qtd_masculino) as qtd_masculino, sum(insc.qtd_feminino) as qtd_masculino  FROM public.inscricao_0_6 as insc
+        const inscricoes0_6 = await pool.query(`SELECT lc.nome, sum(insc.qtd_masculino) as qtd_masculino, sum(insc.qtd_feminino) as qtd_feminino  FROM public.inscricao_0_6 as insc
                                                 inner join inscricao_geral as ig on insc.inscricao_geral_id = ig.id
                                                 inner join localidades as lc on ig.localidade_id = lc.id
                                                 GROUP BY lc.nome`);
         const inscricoes7_10 = await pool.query(
-            `SELECT lc.nome, sum(insc.qtd_masculino) as qtd_masculino, sum(insc.qtd_feminino) as qtd_masculino  FROM public.inscricao_7_10 as insc
+            `SELECT lc.nome, sum(insc.qtd_masculino) as qtd_masculino, sum(insc.qtd_feminino) as qtd_feminino  FROM public.inscricao_7_10 as insc
                                                 inner join inscricao_geral as ig on insc.inscricao_geral_id = ig.id
                                                 inner join localidades as lc on ig.localidade_id = lc.id
                                                 GROUP BY lc.nome`
         );
         const inscricoes10_acima = await pool.query(
-            `SELECT lc.nome, sum(insc.qtd_masculino) as qtd_masculino, sum(insc.qtd_feminino) as qtd_masculino  FROM public.inscricao_10_acima as insc
+            `SELECT lc.nome, sum(insc.qtd_masculino) as qtd_masculino, sum(insc.qtd_feminino) as qtd_feminino  FROM public.inscricao_10_acima as insc
                                                 inner join inscricao_geral as ig on insc.inscricao_geral_id = ig.id
                                                 inner join localidades as lc on ig.localidade_id = lc.id
                                                 GROUP BY lc.nome`
